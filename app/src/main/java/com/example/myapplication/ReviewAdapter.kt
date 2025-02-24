@@ -16,9 +16,8 @@ import com.bumptech.glide.Glide
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import model.DishReview
-import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 class ReviewAdapter(
     private var reviewList: List<DishReview>,
