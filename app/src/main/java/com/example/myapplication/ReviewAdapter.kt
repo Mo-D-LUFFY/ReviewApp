@@ -16,6 +16,9 @@ import com.bumptech.glide.Glide
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import model.DishReview
+import com.google.firebase.Timestamp
+import java.text.SimpleDateFormat
+import java.util.*
 
 class ReviewAdapter(
     private var reviewList: List<DishReview>,
@@ -38,6 +41,8 @@ class ReviewAdapter(
         val likeCount: TextView = itemView.findViewById(R.id.like_count)
         val deleteBtn: ImageView = itemView.findViewById(R.id.deleteBtn)
         val ratingTextView: TextView = itemView.findViewById(R.id.ratingTextView)
+        // Added TextView for displaying date of upload (make sure your layout has this view with id "dateOfUpload")
+        val dateOfUpload: TextView = itemView.findViewById(R.id.dateOfUpload)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReviewViewHolder {
@@ -54,8 +59,9 @@ class ReviewAdapter(
         holder.reviewText.text = review.reviewText
         holder.priceOnCard.text = "Rs.${review.price}"
         holder.likeCount.text = review.likes.toString()
-        holder.ratingTextView.text=review.rating.toString()
+        holder.ratingTextView.text = review.rating.toString()
 
+        // Set background color based on rating
         val backgroundColor = when (review.rating) {
             0 -> R.drawable.redrectangle
             1 -> R.drawable.redrectangle
@@ -64,6 +70,8 @@ class ReviewAdapter(
             else -> R.drawable.greenrectangle
         }
         holder.itemView.findViewById<ConstraintLayout>(R.id.background_color).setBackgroundResource(backgroundColor)
+
+        // Load food image if available
         if (review.imageUrl.isNotEmpty()) {
             holder.foodImage.visibility = View.VISIBLE
             Glide.with(holder.itemView.context)
@@ -73,15 +81,23 @@ class ReviewAdapter(
             holder.foodImage.visibility = View.GONE
         }
 
+        // Load user profile picture
         Glide.with(holder.itemView.context)
             .load(review.userProfilePic)
             .into(holder.userProfilePic)
 
-        // Set like button state based on isLikedByUser
+        // Update like button state based on whether the current user has liked the review
         updateLikeButtonState(holder, review.isLikedByUser(currentUserId))
 
+        // Format and display the date of upload
+        review.timestamp?.let { date ->
+            val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+            holder.dateOfUpload.text = sdf.format(date)
+        } ?: run {
+            holder.dateOfUpload.text = "N/A"
+        }
 
-        // GestureDetector to detect double tap
+        // GestureDetector to detect double tap for liking the review
         val gestureDetector = GestureDetector(holder.itemView.context, object : GestureDetector.SimpleOnGestureListener() {
             override fun onDoubleTap(e: MotionEvent): Boolean {
                 toggleLike(holder, review)
@@ -141,7 +157,6 @@ class ReviewAdapter(
     private fun showLikeCountTemporarily(holder: ReviewViewHolder, likeCount: Int) {
         holder.likeCount.visibility = View.VISIBLE
         holder.likeCount.text = likeCount.toString()
-
     }
 
     override fun getItemCount() = reviewList.size
@@ -150,6 +165,7 @@ class ReviewAdapter(
         reviewList = newReviews
         notifyDataSetChanged()
     }
+
     fun setCurrentUserId(userId: String?) {
         currentUserId = userId
         notifyDataSetChanged()  // Refresh the entire list to update like states
@@ -205,5 +221,4 @@ class ReviewAdapter(
         // Show the dialog
         alertDialog.show()
     }
-
 }

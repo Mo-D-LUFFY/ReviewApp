@@ -38,6 +38,7 @@ class RestaurantsFragment : Fragment() {
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
     private var currentUserId: String? = null
+    private var countDownTimer: CountDownTimer? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -61,7 +62,7 @@ class RestaurantsFragment : Fragment() {
             return view
         }
 
-        // Countdown Timer
+        // Start countdown timer with updated calculation
         startCountdownTimer(calculateTimeUntilNextSundayMidnight())
 
         // Initialize RecyclerView
@@ -79,15 +80,25 @@ class RestaurantsFragment : Fragment() {
         return view
     }
 
+    /**
+     * Calculate the time until the next Sunday at midnight.
+     *
+     * This implementation sets the target time to Sunday 00:00:00.000.
+     * If the current time is already past that moment (e.g. on Sunday),
+     * it adds 7 days so that the reset always happens at the start of the next week.
+     */
     private fun calculateTimeUntilNextSundayMidnight(): Long {
         val calendar = Calendar.getInstance()
-        val currentDayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
-        val daysUntilSunday = if (currentDayOfWeek == Calendar.SUNDAY) 0 else 8 - currentDayOfWeek
-        calendar.add(Calendar.DAY_OF_YEAR, daysUntilSunday)
-        calendar.set(Calendar.HOUR_OF_DAY, 23)
-        calendar.set(Calendar.MINUTE, 59)
-        calendar.set(Calendar.SECOND, 59)
-        calendar.set(Calendar.MILLISECOND, 999)
+        // Set calendar to Sunday 00:00:00.000 of this week
+        calendar.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
+        calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        // If that time has already passed, add 7 days to set it for the next week
+        if (calendar.timeInMillis <= System.currentTimeMillis()) {
+            calendar.add(Calendar.DAY_OF_YEAR, 7)
+        }
         return calendar.timeInMillis - System.currentTimeMillis()
     }
 
@@ -124,6 +135,8 @@ class RestaurantsFragment : Fragment() {
                     restaurantOfTheWeekName.text = restaurant?.name ?: "No Restaurant"
                     Glide.with(this)
                         .load(restaurant?.imageUrl)
+//                        .placeholder(R.drawable.placeholder_image)
+//                        .error(R.drawable.error_image)
                         .into(restaurantOfTheWeekImage)
 
                     // Display the number of votes
@@ -147,9 +160,11 @@ class RestaurantsFragment : Fragment() {
         val confirmButton = dialogView.findViewById<TextView>(R.id.confirmBtn)
         val cancelButton = dialogView.findViewById<TextView>(R.id.cancelBtn)
 
-        restaurantNameTextView.text = "Vote for \"${restaurant.name}\", You Sure?"
+        restaurantNameTextView.text = "Vote for \"${restaurant.name}\", you sure?"
         Glide.with(this)
             .load(restaurant.imageUrl)
+//            .placeholder(R.drawable.placeholder_image)
+//            .error(R.drawable.error_image)
             .into(restaurantImageView)
 
         val dialog = dialogBuilder.create()
@@ -161,6 +176,7 @@ class RestaurantsFragment : Fragment() {
 
         cancelButton.setOnClickListener { dialog.dismiss() }
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.setCanceledOnTouchOutside(true)
         dialog.show()
     }
 
@@ -197,6 +213,9 @@ class RestaurantsFragment : Fragment() {
             }
     }
 
+    /**
+     * Returns the start of the week (Sunday midnight).
+     */
     private fun calculateStartOfWeek(): Long {
         val calendar = Calendar.getInstance()
         calendar.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
@@ -208,12 +227,16 @@ class RestaurantsFragment : Fragment() {
     }
 
     private fun startCountdownTimer(timeInMillis: Long) {
-        object : CountDownTimer(timeInMillis, 1000) {
+        // Cancel any existing timer
+        countDownTimer?.cancel()
+
+        countDownTimer = object : CountDownTimer(timeInMillis, 1000) {
             override fun onTick(millisUntilFinished: Long) {
                 val days = TimeUnit.MILLISECONDS.toDays(millisUntilFinished)
                 val hours = TimeUnit.MILLISECONDS.toHours(millisUntilFinished) % 24
                 val minutes = TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished) % 60
                 val seconds = TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished) % 60
+
                 daysTextView.text = String.format("%02d", days)
                 hoursTextView.text = String.format("%02d", hours)
                 minutesTextView.text = String.format("%02d", minutes)
@@ -221,8 +244,11 @@ class RestaurantsFragment : Fragment() {
             }
 
             override fun onFinish() {
+                // Reset votes for all restaurants to 0
                 resetRestaurantVotes()
+                // Clear all vote records so users can vote again
                 clearUserVotes()
+                // Restart the timer for the next week
                 startCountdownTimer(calculateTimeUntilNextSundayMidnight())
             }
         }.start()
@@ -236,13 +262,18 @@ class RestaurantsFragment : Fragment() {
                     val restaurantRef = db.collection("restaurants").document(document.id)
                     batch.update(restaurantRef, "votes", 0)
                 }
-                batch.commit()
+                batch.commit().addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        Log.d("VotesReset", "All restaurant votes have been reset.")
+                    } else {
+                        Log.e("VotesReset", "Failed to reset restaurant votes: ${task.exception}")
+                    }
+                }
             }
     }
 
     private fun clearUserVotes() {
-        db.collection("votes")
-            .get()
+        db.collection("votes").get()
             .addOnSuccessListener { querySnapshot ->
                 val batch = db.batch()
                 querySnapshot.documents.forEach { document ->
@@ -260,4 +291,11 @@ class RestaurantsFragment : Fragment() {
             Toast.makeText(it, message, Toast.LENGTH_SHORT).show()
         }
     }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // Prevent memory leaks by cancelling the timer when the view is destroyed.
+        countDownTimer?.cancel()
+    }
 }
+

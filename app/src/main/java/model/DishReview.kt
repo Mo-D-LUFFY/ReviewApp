@@ -1,6 +1,5 @@
 package model
 
-import com.google.firebase.firestore.GeoPoint
 import com.google.firebase.firestore.ServerTimestamp
 import java.util.Date
 
@@ -14,7 +13,6 @@ data class DishReview(
     val imageUrl: String = "",
     var restaurantName: String = "",
     var reviewText: String = "",
-    var shopLocation: GeoPoint = GeoPoint(0.0, 0.0),
     @ServerTimestamp var timestamp: Date? = null,
     var userName: String = "",
     var userProfilePic: String = "",

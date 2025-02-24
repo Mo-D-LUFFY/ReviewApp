@@ -590,7 +590,6 @@ class HomeFragment : Fragment() {
             "reviewText" to dishReview,
             "rating" to dishRating,
             "imageUrl" to imageUrl,
-            "location" to GeoPoint(0.0, 0.0),
             "userProfilePic" to userProfilePic,
             "userName" to userName,
             "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp(),
