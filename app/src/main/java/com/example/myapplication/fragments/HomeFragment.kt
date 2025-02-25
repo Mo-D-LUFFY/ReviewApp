@@ -67,6 +67,7 @@ import android.widget.Button
 import android.animation.Animator
 import android.animation.ObjectAnimator
 import android.widget.ImageView
+import com.example.myapplication.ReviewDetailActivity
 
 
 class HomeFragment : Fragment() {
@@ -210,7 +211,21 @@ class HomeFragment : Fragment() {
         // Initialize RecyclerView and Adapter
         newRecyclerView = _binding!!.recyclerHome  // Adjust this line according to your binding
         newRecyclerView.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-        homeAdapter=HomeAdapter(foodItem,requireContext())
+        homeAdapter=HomeAdapter(foodItem,requireContext()) { selectedItem ->
+            val intent = Intent(requireContext(), ReviewDetailActivity::class.java).apply {
+                putExtra("dishName", selectedItem.dishName)
+                putExtra("restaurantName", selectedItem.restaurantName)
+//                putExtra("userName", selectedItem.userName) // Add this if available in HomeCards
+                putExtra("reviewText", selectedItem.reviewText) // Add if available
+                putExtra("price", selectedItem.price) // Ensure HomeCards has this
+                putExtra("likes", selectedItem.likes)
+                putExtra("rating", selectedItem.rating)
+                putExtra("imageUrl", selectedItem.imageUrl)
+//                putExtra("userProfilePic", selectedItem.userProfilePic) // Add if available
+            }
+            startActivity(intent)
+
+        }
         newRecyclerView.adapter = homeAdapter
 
         // Show ProgressBar and hide RecyclerView initially
@@ -304,13 +319,7 @@ class HomeFragment : Fragment() {
                 for (document in documents) {
                     val review = document.toObject(HomeCards::class.java)
                     if (review.imageUrl.isNotEmpty()) { // Check for non-empty image URL
-                        foodItem.add(
-                            HomeCards(
-                                dishName = review.dishName,
-                                imageUrl = review.imageUrl,
-                                restaurantName = review.restaurantName // Fetch restaurant name
-                            )
-                        )
+                        foodItem.add(review)
                     }
                 }
                 homeAdapter.updateReviews(foodItem)

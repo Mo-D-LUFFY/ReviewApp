@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -40,6 +41,16 @@ class RestaurantsFragment : Fragment() {
     private var currentUserId: String? = null
     private var countDownTimer: CountDownTimer? = null
 
+    private lateinit var topRestaurant1Name: TextView
+    private lateinit var topRestaurant2Name: TextView
+    private lateinit var topRunnerImage: ImageView
+    private lateinit var runnerUpImage: ImageView
+    private lateinit var topRestaurant1Bar: View
+    private lateinit var topRestaurant2Bar: View
+    private lateinit var topRestaurant1Percent: TextView
+    private lateinit var topRestaurant2Percent: TextView
+    private lateinit var othersVotes: TextView
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -53,6 +64,21 @@ class RestaurantsFragment : Fragment() {
         secondsTextView = view.findViewById(R.id.secondsTextView)
         restaurantOfTheWeekName = view.findViewById(R.id.restaurantOfTheWeekName)
         restaurantOfTheWeekImage = view.findViewById(R.id.restaurantOfTheWeekImage)
+
+
+        // Initialize UI components
+        topRestaurant1Name = view.findViewById(R.id.topRestaurant1Name)
+        topRestaurant2Name = view.findViewById(R.id.topRestaurant2Name)
+        topRunnerImage = view.findViewById(R.id.topRunnerImage)
+        runnerUpImage = view.findViewById(R.id.runnerUpImage)
+        topRestaurant1Bar = view.findViewById(R.id.topRestaurant1Bar)
+        topRestaurant2Bar = view.findViewById(R.id.topRestaurant2Bar)
+        topRestaurant1Percent = view.findViewById(R.id.topRestaurant1Percent)
+        topRestaurant2Percent = view.findViewById(R.id.topRestaurant2Percent)
+        othersVotes = view.findViewById(R.id.othersVotes)
+
+        // Load voting data
+        fetchVotingData()
 
         // Get current user ID
         currentUserId = auth.currentUser?.uid
@@ -87,6 +113,57 @@ class RestaurantsFragment : Fragment() {
      * If the current time is already past that moment (e.g. on Sunday),
      * it adds 7 days so that the reset always happens at the start of the next week.
      */
+    private fun fetchVotingData() {
+        db.collection("restaurants")
+            .orderBy("votes", Query.Direction.DESCENDING)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                if (!snapshot.isEmpty) {
+                    val topRestaurants = snapshot.documents.mapNotNull { it.toObject(Restaurant::class.java) }
+
+                    if (topRestaurants.size >= 2) {
+                        val top1 = topRestaurants[0]
+                        val top2 = topRestaurants[1]
+                        val totalVotes = topRestaurants.sumOf { it.votes } // Count all votes
+
+                        if (totalVotes == 0) return@addOnSuccessListener // Avoid division by zero
+
+                        // Calculate Correct Vote Percentages
+                        val top1Percent = (top1.votes.toFloat() / totalVotes) * 100
+                        val top2Percent = (top2.votes.toFloat() / totalVotes) * 100
+                        val othersPercent = 100 - (top1Percent + top2Percent)
+
+                        // Set text values
+                        topRestaurant1Name.text = top1.name
+                        topRestaurant2Name.text = top2.name
+                        topRestaurant1Percent.text = String.format("%.1f%%", top1Percent)
+                        topRestaurant2Percent.text = String.format("%.1f%%", top2Percent)
+                        othersVotes.text = "Others: ${String.format("%.1f%%", othersPercent)}"
+
+                        // Load images
+                        Glide.with(this).load(top1.imageUrl).into(topRunnerImage)
+                        Glide.with(this).load(top2.imageUrl).into(runnerUpImage)
+
+                        // Adjust the width of the progress bars dynamically
+                        val totalBarWeight = top1Percent + top2Percent // Ensure correct scaling
+
+                        val params1 = topRestaurant1Bar.layoutParams as LinearLayout.LayoutParams
+                        params1.weight = (top1Percent / totalBarWeight) * 100 // Normalize to fit available space
+                        topRestaurant1Bar.layoutParams = params1
+
+                        val params2 = topRestaurant2Bar.layoutParams as LinearLayout.LayoutParams
+                        params2.weight = (top2Percent / totalBarWeight) * 100 // Normalize to fit available space
+                        topRestaurant2Bar.layoutParams = params2
+                    }
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("FetchVotingData", "Error fetching votes: $e")
+            }
+    }
+
+
+
     private fun calculateTimeUntilNextSundayMidnight(): Long {
         val calendar = Calendar.getInstance()
         // Set calendar to Sunday 00:00:00.000 of this week
@@ -135,13 +212,11 @@ class RestaurantsFragment : Fragment() {
                     restaurantOfTheWeekName.text = restaurant?.name ?: "No Restaurant"
                     Glide.with(this)
                         .load(restaurant?.imageUrl)
-//                        .placeholder(R.drawable.placeholder_image)
-//                        .error(R.drawable.error_image)
                         .into(restaurantOfTheWeekImage)
 
                     // Display the number of votes
                     val votesCount = restaurant?.votes ?: 0
-                    view?.findViewById<TextView>(R.id.votesOnRestOfWeek)?.text = "$votesCount Votes"
+                    view?.findViewById<TextView>(R.id.votesOnRestOfWeek)?.text = "Won By - $votesCount Votes"
                 }
             }
             .addOnFailureListener { e ->
@@ -163,8 +238,6 @@ class RestaurantsFragment : Fragment() {
         restaurantNameTextView.text = "Vote for \"${restaurant.name}\", you sure?"
         Glide.with(this)
             .load(restaurant.imageUrl)
-//            .placeholder(R.drawable.placeholder_image)
-//            .error(R.drawable.error_image)
             .into(restaurantImageView)
 
         val dialog = dialogBuilder.create()
@@ -236,7 +309,6 @@ class RestaurantsFragment : Fragment() {
                 val hours = TimeUnit.MILLISECONDS.toHours(millisUntilFinished) % 24
                 val minutes = TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished) % 60
                 val seconds = TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished) % 60
-
                 daysTextView.text = String.format("%02d", days)
                 hoursTextView.text = String.format("%02d", hours)
                 minutesTextView.text = String.format("%02d", minutes)
@@ -244,11 +316,8 @@ class RestaurantsFragment : Fragment() {
             }
 
             override fun onFinish() {
-                // Reset votes for all restaurants to 0
                 resetRestaurantVotes()
-                // Clear all vote records so users can vote again
                 clearUserVotes()
-                // Restart the timer for the next week
                 startCountdownTimer(calculateTimeUntilNextSundayMidnight())
             }
         }.start()

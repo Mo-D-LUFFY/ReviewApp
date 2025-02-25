@@ -1,9 +1,18 @@
 package com.example.myapplication
 import android.app.Activity
+import android.app.Dialog
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.util.TypedValue
+import android.view.Gravity
+import android.view.ViewGroup
+import android.view.Window
+import android.widget.Button
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.MediaController
@@ -16,6 +25,7 @@ import com.foysaldev.cropper.CropImage
 import com.foysaldev.cropper.CropImageView
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.database.DataSnapshot
@@ -95,6 +105,11 @@ class UserProfile : AppCompatActivity() {
             showCustomDialog()
         }
 
+        // Click listener for feature suggest
+        binding.featuresSuggest.setOnClickListener {
+            showFeatureBottomSheet()
+        }
+
         // Click listener for back button
         binding.backtobase.setOnClickListener {
             supportFinishAfterTransition()
@@ -119,6 +134,39 @@ class UserProfile : AppCompatActivity() {
                 finish()
             }
         }
+    }
+
+    private fun showFeatureBottomSheet() {
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.featurebottomsheet)
+
+        val featureInput = dialog.findViewById<EditText>(R.id.featureName)
+        val submitFeature = dialog.findViewById<Button>(R.id.confirmSendButton)
+
+        submitFeature.setOnClickListener {
+            val featureText = featureInput.text.toString().trim()
+            if (featureText.isNotEmpty()) {
+                // Handle the feature submission (e.g., save to Firebase)
+                Toast.makeText(this, "Feature submitted!", Toast.LENGTH_SHORT).show()
+                dialog.dismiss()
+            } else {
+                Toast.makeText(this, "Please enter a feature", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Set width with 30dp margin on both sides
+        val displayMetrics = resources.displayMetrics
+        val screenWidth = displayMetrics.widthPixels
+        val marginInPx = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP, 20f, resources.displayMetrics
+        ).toInt()
+
+        dialog.window?.setLayout(screenWidth - (2 * marginInPx), ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.window?.setGravity(Gravity.CENTER)
+
+        dialog.show()
     }
 
     private fun openSocialMedia(url: String) {

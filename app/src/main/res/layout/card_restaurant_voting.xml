@@ -5,9 +5,10 @@
     android:layout_height="wrap_content"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="horizontal"
-    android:background="@drawable/textfield_bg_home_plus"
     android:layout_marginStart="20dp"
     android:layout_marginTop="10dp"
+    android:background="@drawable/rounded_corners"
+    android:elevation="8dp"
     android:layout_marginBottom="10dp"
     android:layout_marginEnd="20dp"
     android:padding="12dp">

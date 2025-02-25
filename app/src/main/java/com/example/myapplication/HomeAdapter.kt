@@ -12,7 +12,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 class HomeAdapter(
     private var cardList: List<HomeCards>,
-    private var context: Context
+    private var context: Context,
+    private val onItemClick: (HomeCards) -> Unit
     ) : RecyclerView.Adapter<HomeAdapter.MyViewHolder>() {
 
     private val firestore = FirebaseFirestore.getInstance()
@@ -39,6 +40,10 @@ class HomeAdapter(
         Glide.with(holder.itemView.context)
             .load(currentItem.imageUrl)
             .into(holder.dishImage)
+
+        holder.itemView.setOnClickListener { onItemClick(currentItem) }
+
+        
     }
     override fun getItemCount(): Int {
         return cardList.size

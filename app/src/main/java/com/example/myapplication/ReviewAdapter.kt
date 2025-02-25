@@ -2,6 +2,8 @@ package com.example.myapplication
 
 import android.app.AlertDialog
 import android.content.Context
+import android.content.Intent
+import android.util.TypedValue
 import android.view.GestureDetector
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -42,6 +44,7 @@ class ReviewAdapter(
         val ratingTextView: TextView = itemView.findViewById(R.id.ratingTextView)
         // Added TextView for displaying date of upload (make sure your layout has this view with id "dateOfUpload")
         val dateOfUpload: TextView = itemView.findViewById(R.id.dateOfUpload)
+        val moreInfo: ImageView = itemView.findViewById(R.id.moreInfo)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReviewViewHolder {
@@ -123,6 +126,20 @@ class ReviewAdapter(
                 Toast.makeText(context, "You can only delete your own reviews.", Toast.LENGTH_SHORT).show()
             }
         }
+        holder.moreInfo.setOnClickListener {
+            val intent = Intent(context,ReviewDetailActivity::class.java).apply {
+                putExtra("dishName", review.dishName)
+                putExtra("restaurantName", review.restaurantName)
+                putExtra("userName", review.userName)
+                putExtra("reviewText", review.reviewText)
+                putExtra("price", review.price)
+                putExtra("likes", review.likes)
+                putExtra("rating", review.rating)
+                putExtra("imageUrl", review.imageUrl)
+                putExtra("userProfilePic", review.userProfilePic)
+            }
+            context.startActivity(intent)
+        }
     }
 
     private fun updateLikeButtonState(holder: ReviewViewHolder, isLiked: Boolean) {
@@ -156,6 +173,7 @@ class ReviewAdapter(
     private fun showLikeCountTemporarily(holder: ReviewViewHolder, likeCount: Int) {
         holder.likeCount.visibility = View.VISIBLE
         holder.likeCount.text = likeCount.toString()
+
     }
 
     override fun getItemCount() = reviewList.size
@@ -219,5 +237,14 @@ class ReviewAdapter(
 
         // Show the dialog
         alertDialog.show()
+
+        // Set dialog width with margins (30dp on both sides)
+        val displayMetrics = context.resources.displayMetrics
+        val screenWidth = displayMetrics.widthPixels
+        val marginInPx = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP, 20f, context.resources.displayMetrics
+        ).toInt()
+
+        alertDialog.window?.setLayout(screenWidth - (2 * marginInPx), ViewGroup.LayoutParams.WRAP_CONTENT)
     }
 }

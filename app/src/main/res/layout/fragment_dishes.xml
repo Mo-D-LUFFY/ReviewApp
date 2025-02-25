@@ -8,13 +8,43 @@
     tools:context=".fragments.DishesFragment">
 
 
+    <LinearLayout
+        android:id="@+id/topSearch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_margin="20dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:background="@drawable/grey_rect_bg"
+            android:elevation="2dp"
+            android:padding="12dp"
+            android:layout_weight="1"
+            android:ems="10"
+            android:textSize="15sp"
+            android:inputType="text"
+            android:hint="Search Dishes.."
+            android:textColor="@color/black"
+            android:textColorHint="@color/quantum_grey600"
+            android:fontFamily="@font/manropesemibold"
+            android:drawableStart="@drawable/searchicon"
+            android:drawablePadding="12dp"/>
+    </LinearLayout>
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="20dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/topSearch">
 
 
         <ProgressBar
@@ -37,7 +67,6 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
-
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>
