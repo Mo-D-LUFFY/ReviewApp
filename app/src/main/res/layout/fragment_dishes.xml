@@ -28,7 +28,7 @@
             android:padding="12dp"
             android:layout_weight="1"
             android:ems="10"
-            android:textSize="15sp"
+            android:textSize="14sp"
             android:inputType="text"
             android:hint="Search by Dish or Restaurant.."
             android:textColor="@color/black"

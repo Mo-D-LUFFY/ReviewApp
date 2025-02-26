@@ -108,7 +108,6 @@
 
             <LinearLayout
                 android:id="@+id/priceAnName"
-                android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_marginTop="10dp"
@@ -124,33 +123,33 @@
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:fontFamily="@font/manropesemibold"
+                    android:fontFamily="@font/manropebold"
                     android:text="Dish Name"
+                    android:textAllCaps="true"
                     android:textColor="@color/black"
-                    android:textSize="17sp" />
+                    android:textSize="14sp" />
 
                 <TextView
                     android:id="@+id/priceOnCard"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:fontFamily="@font/manropesemibold"
+                    android:fontFamily="@font/manropebold"
                     android:text="Rs.160"
                     android:textAlignment="viewEnd"
                     android:textColor="@color/black"
-                    android:textSize="16sp" />
+                    android:textSize="13sp" />
             </LinearLayout>
 
             <TextView
                 android:id="@+id/Restraunt_Name"
-                android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="top"
                 android:fontFamily="@font/manropesemibold"
                 android:text="Restaurants Name"
                 android:textColor="@color/link"
-                android:textSize="14sp"
+                android:textSize="11sp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.5"
                 app:layout_constraintStart_toStartOf="parent"
@@ -160,14 +159,14 @@
                 android:id="@+id/Review_text"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="15dp"
+                android:layout_marginTop="5dp"
                 android:layout_marginBottom="15dp"
                 android:ellipsize="end"
                 android:fontFamily="@font/manropesemibold"
                 android:maxLines="2"
                 android:text="This is a long text that might overflow beyond the specified number of lines in this TextView and we want to see ellipsis if it overflows."
                 android:textColor="@color/black"
-                android:textSize="14sp" />
+                android:textSize="13sp" />
 
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
@@ -186,14 +185,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="35dp"
                 android:layout_gravity="end"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="15dp"
                 android:layout_marginBottom="10dp"
                 android:orientation="horizontal">
 
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/background_color"
-                    android:visibility="gone"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:layout_marginEnd="5dp"
