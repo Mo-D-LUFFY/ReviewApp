@@ -17,15 +17,21 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.myapplication.R
 import com.example.myapplication.RestaurantAdapter
+import com.example.myapplication.databinding.FragmentRestrauntsBinding
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import model.Restaurant
+import model.WeeklyWinnerRestaurant
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 class RestaurantsFragment : Fragment() {
+    private var _binding: FragmentRestrauntsBinding? = null
+    private val binding get() = _binding!!
+
 
     private lateinit var daysTextView: TextView
     private lateinit var hoursTextView: TextView
@@ -54,9 +60,9 @@ class RestaurantsFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        val view = inflater.inflate(R.layout.fragment_restraunts, container, false)
-
+    ): View {
+        _binding = FragmentRestrauntsBinding.inflate(inflater, container, false)
+        val view = binding.root
         // Initialize views
         daysTextView = view.findViewById(R.id.daysTextView)
         hoursTextView = view.findViewById(R.id.hoursTextView)
@@ -77,8 +83,15 @@ class RestaurantsFragment : Fragment() {
         topRestaurant2Percent = view.findViewById(R.id.topRestaurant2Percent)
         othersVotes = view.findViewById(R.id.othersVotes)
 
-        // Load voting data
-        fetchVotingData()
+        // Initialize RecyclerView
+        recyclerView = view.findViewById(R.id.restrauntRecyclerView)
+        recyclerView.layoutManager = LinearLayoutManager(context)
+        adapter = RestaurantAdapter(restaurantList) { restaurant ->
+            showVoteConfirmationDialog(restaurant)
+        }
+        recyclerView.adapter = adapter
+
+
 
         // Get current user ID
         currentUserId = auth.currentUser?.uid
@@ -91,28 +104,14 @@ class RestaurantsFragment : Fragment() {
         // Start countdown timer with updated calculation
         startCountdownTimer(calculateTimeUntilNextSundayMidnight())
 
-        // Initialize RecyclerView
-        recyclerView = view.findViewById(R.id.restrauntRecyclerView)
-        recyclerView.layoutManager = LinearLayoutManager(context)
-        adapter = RestaurantAdapter(restaurantList) { restaurant ->
-            showVoteConfirmationDialog(restaurant)
-        }
-        recyclerView.adapter = adapter
-
-        // Load restaurants and fetch Restaurant of the Week
+        // Load Data
         loadRestaurants()
-        fetchRestaurantOfTheWeek()
+        fetchVotingData()
+        fetchWeeklyWinner()
 
         return view
     }
 
-    /**
-     * Calculate the time until the next Sunday at midnight.
-     *
-     * This implementation sets the target time to Sunday 00:00:00.000.
-     * If the current time is already past that moment (e.g. on Sunday),
-     * it adds 7 days so that the reset always happens at the start of the next week.
-     */
     private fun fetchVotingData() {
         db.collection("restaurants")
             .orderBy("votes", Query.Direction.DESCENDING)
@@ -201,26 +200,17 @@ class RestaurantsFragment : Fragment() {
             }
     }
 
-    private fun fetchRestaurantOfTheWeek() {
-        db.collection("restaurants")
-            .orderBy("votes", Query.Direction.DESCENDING)
-            .limit(1)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                if (snapshot.documents.isNotEmpty()) {
-                    val restaurant = snapshot.documents[0].toObject(Restaurant::class.java)
-                    restaurantOfTheWeekName.text = restaurant?.name ?: "No Restaurant"
-                    Glide.with(this)
-                        .load(restaurant?.imageUrl)
-                        .into(restaurantOfTheWeekImage)
-
-                    // Display the number of votes
-                    val votesCount = restaurant?.votes ?: 0
-                    view?.findViewById<TextView>(R.id.votesOnRestOfWeek)?.text = "Won By - $votesCount Votes"
+    private fun fetchWeeklyWinner() {
+        db.collection("weekly_winner").document("latest").get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    val winner = document.toObject(WeeklyWinnerRestaurant::class.java)
+                    winner?.let {
+                        binding.restaurantOfTheWeekName.text = it.name
+                        binding.restaurantOfTheWeekVotes.text = "${it.votes} votes"
+                        Glide.with(requireContext()).load(it.imageUrl).into(binding.restaurantOfTheWeekImage)
+                    }
                 }
-            }
-            .addOnFailureListener { e ->
-                Log.e("FetchRestaurantOfTheWeek", "Error: $e")
             }
     }
 
@@ -279,7 +269,7 @@ class RestaurantsFragment : Fragment() {
                                 .update("votes", FieldValue.increment(1))
                                 .addOnSuccessListener {
                                     showToast("Vote submitted!")
-                                    fetchRestaurantOfTheWeek()
+                                    fetchWeeklyWinner()
                                 }
                         }
                 }
@@ -324,21 +314,34 @@ class RestaurantsFragment : Fragment() {
     }
 
     private fun resetRestaurantVotes() {
-        db.collection("restaurants").get()
-            .addOnSuccessListener { snapshot ->
-                val batch = db.batch()
-                snapshot.documents.forEach { document ->
-                    val restaurantRef = db.collection("restaurants").document(document.id)
-                    batch.update(restaurantRef, "votes", 0)
-                }
-                batch.commit().addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        Log.d("VotesReset", "All restaurant votes have been reset.")
-                    } else {
-                        Log.e("VotesReset", "Failed to reset restaurant votes: ${task.exception}")
+        val restaurantsRef = FirebaseFirestore.getInstance().collection("restaurants")
+        val winnerRef = FirebaseFirestore.getInstance().collection("weekly_winner").document("latest")
+
+        restaurantsRef.get().addOnSuccessListener { snapshot ->
+            val restaurants = snapshot.documents.mapNotNull { it.toObject(Restaurant::class.java) }
+
+            if (restaurants.isNotEmpty()) {
+                val highestVotedRestaurant = restaurants.maxByOrNull { it.votes }
+
+                highestVotedRestaurant?.let { winner ->
+                    val winnerData = WeeklyWinnerRestaurant(
+                        restaurantId = winner.id,
+                        name = winner.name,
+                        imageUrl = winner.imageUrl,
+                        votes = winner.votes,
+                        weekStartTimestamp = Timestamp.now()
+                    )
+
+                    winnerRef.set(winnerData)
+
+                    val batch = db.batch()
+                    snapshot.documents.forEach { doc ->
+                        batch.update(doc.reference, "votes", 0)
                     }
+                    batch.commit()
                 }
             }
+        }
     }
 
     private fun clearUserVotes() {
@@ -365,6 +368,7 @@ class RestaurantsFragment : Fragment() {
         super.onDestroyView()
         // Prevent memory leaks by cancelling the timer when the view is destroyed.
         countDownTimer?.cancel()
+        _binding = null
     }
 }
 

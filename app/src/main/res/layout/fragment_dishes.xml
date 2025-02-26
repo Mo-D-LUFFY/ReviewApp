@@ -20,6 +20,7 @@
         app:layout_constraintStart_toStartOf="parent">
 
         <EditText
+            android:id="@+id/searchEditText"
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:background="@drawable/grey_rect_bg"
@@ -29,7 +30,7 @@
             android:ems="10"
             android:textSize="15sp"
             android:inputType="text"
-            android:hint="Search Dishes.."
+            android:hint="Search by Dish or Restaurant.."
             android:textColor="@color/black"
             android:textColorHint="@color/quantum_grey600"
             android:fontFamily="@font/manropesemibold"
