@@ -35,7 +35,7 @@ class HomeAdapter(
 
         holder.cardTitle.text = currentItem.dishName  // Use description instead of cardDescription
 
-        holder.restaurantName.text = "@${currentItem.restaurantName}"
+        holder.restaurantName.text = currentItem.restaurantName
         holder.restaurantName.setTextColor(holder.itemView.context.getColor(R.color.link))
         Glide.with(holder.itemView.context)
             .load(currentItem.imageUrl)

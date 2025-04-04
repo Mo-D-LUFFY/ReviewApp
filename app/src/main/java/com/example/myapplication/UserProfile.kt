@@ -14,12 +14,8 @@ import android.view.ViewGroup
 import android.view.Window
 import android.widget.Button
 import android.widget.EditText
-import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.MediaController
-import android.widget.TextView
 import android.widget.Toast
-import android.widget.VideoView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -28,7 +24,6 @@ import com.foysaldev.cropper.CropImage
 import com.foysaldev.cropper.CropImageView
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.database.DataSnapshot
@@ -185,6 +180,8 @@ class UserProfile : AppCompatActivity() {
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         dialog.window?.setGravity(Gravity.CENTER)
 
+
+
         dialog.show()
     }
 
@@ -195,20 +192,44 @@ class UserProfile : AppCompatActivity() {
         dialog.setContentView(R.layout.featurebottomsheet)
 
         val featureInput = dialog.findViewById<EditText>(R.id.featureName)
+        val uiInput = dialog.findViewById<EditText>(R.id.uiSuggestName)
         val submitFeature = dialog.findViewById<Button>(R.id.confirmSendButton)
+        val cancelButton = dialog.findViewById<Button>(R.id.cancelDeleteButton)
 
         submitFeature.setOnClickListener {
             val featureText = featureInput.text.toString().trim()
+            val uiText = uiInput.text.toString().trim()
+            val userId = FirebaseAuth.getInstance().currentUser?.uid ?: "anonymous"
+
             if (featureText.isNotEmpty()) {
-                // Handle the feature submission (e.g., save to Firebase)
-                Toast.makeText(this, "Feature submitted!", Toast.LENGTH_SHORT).show()
-                dialog.dismiss()
+                // Save to Firestore
+                val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                val suggestion = hashMapOf(
+                    "feature" to featureText,
+                    "ui_ux" to uiText,
+                    "userId" to userId,
+                    "timestamp" to com.google.firebase.Timestamp.now()
+                )
+                submitFeature.isEnabled = false // Disable button to prevent multiple clicks
+
+                db.collection("feature_suggestions")
+                    .add(suggestion)
+                    .addOnSuccessListener {
+                        Toast.makeText(this, "Thanks for your suggestion!", Toast.LENGTH_SHORT).show()
+                        dialog.dismiss()
+                    }
+                    .addOnFailureListener {
+                        Toast.makeText(this, "Failed to submit. Please try again.", Toast.LENGTH_SHORT).show()
+                    }
+                    .addOnCompleteListener {
+                        submitFeature.isEnabled = true // Re-enable button after completion
+                    }
             } else {
                 Toast.makeText(this, "Please enter a feature", Toast.LENGTH_SHORT).show()
             }
+
         }
 
-        // Set width with 30dp margin on both sides
         val displayMetrics = resources.displayMetrics
         val screenWidth = displayMetrics.widthPixels
         val marginInPx = TypedValue.applyDimension(
@@ -218,15 +239,13 @@ class UserProfile : AppCompatActivity() {
         dialog.window?.setLayout(screenWidth - (2 * marginInPx), ViewGroup.LayoutParams.WRAP_CONTENT)
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         dialog.window?.setGravity(Gravity.CENTER)
+        cancelButton.setOnClickListener {
+            dialog.dismiss()
+        }
 
         dialog.show()
     }
 
-    private fun openSocialMedia(url: String) {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        startActivity(intent)
-    }
 
     private fun showCustomDialog() {
         val intent = Intent(Intent.ACTION_GET_CONTENT)

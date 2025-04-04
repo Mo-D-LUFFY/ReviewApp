@@ -149,7 +149,7 @@
                 android:fontFamily="@font/manropesemibold"
                 android:text="Restaurants Name"
                 android:textColor="@color/link"
-                android:textSize="11sp"
+                android:textSize="15sp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.5"
                 app:layout_constraintStart_toStartOf="parent"

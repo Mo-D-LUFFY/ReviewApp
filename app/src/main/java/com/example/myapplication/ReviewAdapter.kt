@@ -56,7 +56,7 @@ class ReviewAdapter(
         val review = reviewList[position]
 
         holder.dishName.text = review.dishName
-        holder.restaurantName.text = "@ ${review.restaurantName}"
+        holder.restaurantName.text = review.restaurantName
         holder.userName.text = review.userName
         holder.reviewText.text = review.reviewText
         holder.priceOnCard.text = "Rs.${review.price}"
