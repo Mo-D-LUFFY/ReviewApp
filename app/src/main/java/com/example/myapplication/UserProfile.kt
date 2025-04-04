@@ -1,6 +1,7 @@
 package com.example.myapplication
 import android.app.Activity
 import android.app.Dialog
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
@@ -20,6 +21,8 @@ import android.widget.TextView
 import android.widget.Toast
 import android.widget.VideoView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.example.myapplication.databinding.ActivityUserProfileBinding
 import com.foysaldev.cropper.CropImage
 import com.foysaldev.cropper.CropImageView
@@ -50,6 +53,12 @@ class UserProfile : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Set white status bar background
+        window.statusBarColor = ContextCompat.getColor(this, R.color.primary_light)
+
+        // Set dark icons for visibility
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
+
         binding = ActivityUserProfileBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -115,6 +124,10 @@ class UserProfile : AppCompatActivity() {
             supportFinishAfterTransition()
         }
 
+        binding.contactBtn.setOnClickListener {
+            showContactUsDialog()
+        }
+
         // Click listener for log out button
         binding.logOutBtn.setOnClickListener {
             mAuth.signOut()
@@ -135,6 +148,46 @@ class UserProfile : AppCompatActivity() {
             }
         }
     }
+
+    private fun showContactUsDialog() {
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.contact_us_dialog)
+
+        val whatsappLayout = dialog.findViewById<LinearLayout>(R.id.contactWhatsapp)
+        whatsappLayout.setOnClickListener {
+            val phoneNumber = "+917985419494" // your WhatsApp number with country code
+            val message = "Hi! I will send 5000 right away!"
+
+            val url = "https://wa.me/${phoneNumber.replace("+", "")}?text=${Uri.encode(message)}"
+            val intent = Intent(Intent.ACTION_VIEW)
+            intent.data = Uri.parse(url)
+
+            try {
+                startActivity(intent)
+            } catch (e: ActivityNotFoundException) {
+                Toast.makeText(this, "WhatsApp is not installed on your device.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+
+        dialog.setCanceledOnTouchOutside(true)
+
+
+        // Set width with 30dp margin on both sides
+        val displayMetrics = resources.displayMetrics
+        val screenWidth = displayMetrics.widthPixels
+        val marginInPx = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP, 20f, resources.displayMetrics
+        ).toInt()
+
+        dialog.window?.setLayout(screenWidth - (2 * marginInPx), ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.window?.setGravity(Gravity.CENTER)
+
+        dialog.show()
+    }
+
 
     private fun showFeatureBottomSheet() {
         val dialog = Dialog(this)

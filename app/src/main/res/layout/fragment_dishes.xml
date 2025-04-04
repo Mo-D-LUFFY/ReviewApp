@@ -30,7 +30,7 @@
             android:ems="10"
             android:textSize="14sp"
             android:inputType="text"
-            android:hint="Search by Dish or Restaurant.."
+            android:hint="Search  by  Name . . . "
             android:textColor="@color/black"
             android:textColorHint="@color/quantum_grey600"
             android:fontFamily="@font/manropesemibold"

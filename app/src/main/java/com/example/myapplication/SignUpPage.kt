@@ -12,6 +12,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.example.myapplication.databinding.ActivitySignUpPageBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
@@ -32,6 +33,11 @@ class  SignUpPage : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Set white status bar background
+        window.statusBarColor = ContextCompat.getColor(this, R.color.top_primary)
+
+        // Set dark icons for visibility
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
         setContentView(binding.root)
 
         // Initializing Firebase Authentication

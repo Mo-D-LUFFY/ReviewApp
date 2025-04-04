@@ -114,7 +114,7 @@
                 android:elevation="8dp"
                 android:fontFamily="@font/manropebold"
                 android:text="Login"
-                android:textAllCaps="false"
+                android:textAllCaps="true"
                 android:textColor="@color/white"
                 android:textSize="17sp" />
 

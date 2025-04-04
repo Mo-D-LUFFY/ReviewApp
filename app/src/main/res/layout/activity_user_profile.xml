@@ -56,12 +56,13 @@
                     app:layout_constraintTop_toTopOf="parent"
                     tools:ignore="TouchTargetSizeCheck" />
                 <ImageView
-                    android:id="@+id/imageView4"
+                    android:id="@+id/contactBtn"
                     android:layout_width="match_parent"
                     android:layout_height="150dp"
                     android:background="@drawable/textfield_bg_home_plus"
                     android:clipToOutline="true"
                     android:padding="1dp"
+                    android:clickable="true"
                     android:scaleType="centerCrop"
                     android:src="@drawable/background_profile_image"
                     app:layout_constraintEnd_toEndOf="parent"

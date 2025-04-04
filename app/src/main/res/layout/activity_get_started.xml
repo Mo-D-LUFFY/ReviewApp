@@ -33,7 +33,7 @@
         android:layout_marginStart="32dp"
         android:layout_marginEnd="32dp"
         android:layout_marginBottom="32dp"
-        android:background="@drawable/banner_offers_bg"
+        android:background="@drawable/cancel_button_home"
         android:fontFamily="@font/manropesemibold"
         android:textColor="@color/white"
         android:text="Get   Started"

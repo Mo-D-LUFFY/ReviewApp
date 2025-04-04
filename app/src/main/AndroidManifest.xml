@@ -43,7 +43,9 @@
             android:theme="@style/Base.Theme.profile" />
         <activity
             android:name=".GetStarted"
-            android:exported="false"></activity>
+            android:exported="false">
+
+        </activity>
         <activity
             android:name=".SignUpPage"
             android:exported="false"
@@ -60,6 +62,7 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
         </activity>
 
         <provider

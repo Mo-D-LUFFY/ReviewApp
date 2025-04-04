@@ -46,7 +46,8 @@
                     android:layout_marginTop="20dp"
                     android:padding="15dp"
                     android:background="@drawable/textfield_bg_home_plus"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
 
                     <androidx.cardview.widget.CardView
                         android:layout_width="50dp"

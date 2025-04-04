@@ -14,6 +14,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.example.myapplication.databinding.ActivityLoginBinding
 import com.example.myapplication.databinding.ResetDialogeBoxBinding
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -46,6 +48,11 @@ class Login : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Set white status bar background
+        window.statusBarColor = ContextCompat.getColor(this, R.color.top_primary)
+
+        // Set dark icons for visibility
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
         setContentView(binding.root)
 
         //Initializing Firebase authentication

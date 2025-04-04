@@ -35,11 +35,11 @@ class RestaurantAdapter(
             .into(holder.restaurantImage)
 
         // Set background color based on ranking (top 3)
-        when (position) {
-            0 -> holder.cardView.setBackgroundResource(R.drawable.gold_encircle_bg) // Gold outline for first place
-            1 -> holder.cardView.setBackgroundResource(R.drawable.silver_encircle_bg) // Silver outline for second place
-            2 -> holder.cardView.setBackgroundResource(R.drawable.bronze_bg_voting)
-        }
+//        when (position) {
+//            0 -> holder.cardView.setBackgroundResource(R.drawable.gold_encircle_bg) // Gold outline for first place
+//            1 -> holder.cardView.setBackgroundResource(R.drawable.silver_encircle_bg) // Silver outline for second place
+//            2 -> holder.cardView.setBackgroundResource(R.drawable.bronze_bg_voting)
+//        }
 
         // Handle vote-up button click
         holder.voteUpButton.setOnClickListener {

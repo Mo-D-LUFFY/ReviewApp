@@ -11,6 +11,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.example.myapplication.databinding.ActivityGetStartedBinding
@@ -26,6 +27,13 @@ class GetStarted : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
+
+        // Set white status bar background
+        window.statusBarColor = ContextCompat.getColor(this, R.color.white)
+
+        // Set dark icons for visibility
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
+
         setOnboardingItems()
         setupIndicators()
         setCurrentIndicator(0)

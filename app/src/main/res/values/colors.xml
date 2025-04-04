@@ -10,4 +10,5 @@
     <color name="primary">#F9EDDF</color>
     <color name="grey">#DADADA</color>
     <color name="primary_light">#F1EBE4</color>
+    <color name="top_primary">#F9EDDF</color>
 </resources>
