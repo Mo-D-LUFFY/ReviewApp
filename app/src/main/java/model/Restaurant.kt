@@ -7,6 +7,7 @@ data class Restaurant(
     var name: String = "",
     var imageUrl: String = "",
     var votes: Int = 0,
-    val lastVoteReset: Timestamp? = null // Use Firebase's Timestamp
-
-)
+    var lastVoteReset: Timestamp? = null
+) {
+    // Note: All fields are var due to Firestore's requirement for setters during deserialization.
+}

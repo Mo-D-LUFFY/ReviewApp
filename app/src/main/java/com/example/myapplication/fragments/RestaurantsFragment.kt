@@ -22,6 +22,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import model.Restaurant
 import model.WeeklyWinnerRestaurant
@@ -46,6 +47,9 @@ class RestaurantsFragment : Fragment() {
     private val auth = FirebaseAuth.getInstance()
     private var currentUserId: String? = null
     private var countDownTimer: CountDownTimer? = null
+    private var weekStartTimestamp: Long = 0L
+    private var restaurantsListener: ListenerRegistration? = null
+
 
     private lateinit var topRestaurant1Name: TextView
     private lateinit var topRestaurant2Name: TextView
@@ -102,9 +106,8 @@ class RestaurantsFragment : Fragment() {
         }
 
         // Start countdown timer with updated calculation
+        weekStartTimestamp = calculateStartOfWeek()
         startCountdownTimer(calculateTimeUntilNextSundayMidnight())
-
-        // Load Data
         loadRestaurants()
         fetchVotingData()
         fetchWeeklyWinner()
@@ -119,67 +122,63 @@ class RestaurantsFragment : Fragment() {
             .addOnSuccessListener { snapshot ->
                 if (!snapshot.isEmpty) {
                     val topRestaurants = snapshot.documents.mapNotNull { it.toObject(Restaurant::class.java) }
-
+                    Log.d("FetchVotingData", "Top restaurants fetched: ${topRestaurants.size}")
                     if (topRestaurants.size >= 2) {
                         val top1 = topRestaurants[0]
                         val top2 = topRestaurants[1]
-                        val totalVotes = topRestaurants.sumOf { it.votes } // Count all votes
+                        val totalVotes = topRestaurants.sumOf { it.votes }
+                        if (totalVotes > 0) {
+                            val top1Percent = (top1.votes.toFloat() / totalVotes) * 100
+                            val top2Percent = (top2.votes.toFloat() / totalVotes) * 100
+                            val othersPercent = 100 - (top1Percent + top2Percent)
 
-                        if (totalVotes == 0) return@addOnSuccessListener // Avoid division by zero
+                            binding.topRestaurant1Name.text = top1.name
+                            binding.topRestaurant2Name.text = top2.name
+                            binding.topRestaurant1Percent.text = String.format("%.1f%%", top1Percent)
+                            binding.topRestaurant2Percent.text = String.format("%.1f%%", top2Percent)
+                            binding.othersVotes.text = "Others: ${String.format("%.1f%%", othersPercent)}"
 
-                        // Calculate Correct Vote Percentages
-                        val top1Percent = (top1.votes.toFloat() / totalVotes) * 100
-                        val top2Percent = (top2.votes.toFloat() / totalVotes) * 100
-                        val othersPercent = 100 - (top1Percent + top2Percent)
+                            Glide.with(requireContext()).load(top1.imageUrl).into(binding.topRunnerImage)
+                            Glide.with(requireContext()).load(top2.imageUrl).into(binding.runnerUpImage)
 
-                        // Set text values
-                        topRestaurant1Name.text = top1.name
-                        topRestaurant2Name.text = top2.name
-                        topRestaurant1Percent.text = String.format("%.1f%%", top1Percent)
-                        topRestaurant2Percent.text = String.format("%.1f%%", top2Percent)
-                        othersVotes.text = "Others: ${String.format("%.1f%%", othersPercent)}"
+                            val totalBarWeight = top1Percent + top2Percent
+                            val params1 = binding.topRestaurant1Bar.layoutParams as LinearLayout.LayoutParams
+                            params1.weight = (top1Percent / totalBarWeight) * 100
+                            binding.topRestaurant1Bar.layoutParams = params1
 
-                        // Load images
-                        Glide.with(this).load(top1.imageUrl).into(topRunnerImage)
-                        Glide.with(this).load(top2.imageUrl).into(runnerUpImage)
-
-                        // Adjust the width of the progress bars dynamically
-                        val totalBarWeight = top1Percent + top2Percent // Ensure correct scaling
-
-                        val params1 = topRestaurant1Bar.layoutParams as LinearLayout.LayoutParams
-                        params1.weight = (top1Percent / totalBarWeight) * 100 // Normalize to fit available space
-                        topRestaurant1Bar.layoutParams = params1
-
-                        val params2 = topRestaurant2Bar.layoutParams as LinearLayout.LayoutParams
-                        params2.weight = (top2Percent / totalBarWeight) * 100 // Normalize to fit available space
-                        topRestaurant2Bar.layoutParams = params2
+                            val params2 = binding.topRestaurant2Bar.layoutParams as LinearLayout.LayoutParams
+                            params2.weight = (top2Percent / totalBarWeight) * 100
+                            binding.topRestaurant2Bar.layoutParams = params2
+                        } else {
+                            resetTopRestaurantsUI()
+                        }
                     }
+                } else {
+                    Log.d("FetchVotingData", "No restaurants found in snapshot")
                 }
             }
             .addOnFailureListener { e ->
                 Log.e("FetchVotingData", "Error fetching votes: $e")
+                showToast("Failed to fetch voting data.")
             }
     }
-
-
-
-    private fun calculateTimeUntilNextSundayMidnight(): Long {
-        val calendar = Calendar.getInstance()
-        // Set calendar to Sunday 00:00:00.000 of this week
-        calendar.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        // If that time has already passed, add 7 days to set it for the next week
-        if (calendar.timeInMillis <= System.currentTimeMillis()) {
-            calendar.add(Calendar.DAY_OF_YEAR, 7)
-        }
-        return calendar.timeInMillis - System.currentTimeMillis()
+    private fun resetTopRestaurantsUI() {
+        binding.topRestaurant1Name.text = "N/A"
+        binding.topRestaurant2Name.text = "N/A"
+        binding.topRestaurant1Percent.text = "0%"
+        binding.topRestaurant2Percent.text = "0%"
+        binding.othersVotes.text = "Others: 0%"
+        binding.topRunnerImage.setImageResource(android.R.color.transparent)
+        binding.runnerUpImage.setImageResource(android.R.color.transparent)
+        val params = binding.topRestaurant1Bar.layoutParams as LinearLayout.LayoutParams
+        params.weight = 0f
+        binding.topRestaurant1Bar.layoutParams = params
+        binding.topRestaurant2Bar.layoutParams = params
     }
 
+
     private fun loadRestaurants() {
-        db.collection("restaurants")
+        restaurantsListener = db.collection("restaurants")
             .orderBy("votes", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
@@ -209,8 +208,18 @@ class RestaurantsFragment : Fragment() {
                         binding.restaurantOfTheWeekName.text = it.name
                         binding.restaurantOfTheWeekVotes.text = "${it.votes} votes"
                         Glide.with(requireContext()).load(it.imageUrl).into(binding.restaurantOfTheWeekImage)
+                        Log.d("FetchWeeklyWinner", "Winner fetched: ${it.name}, votes: ${it.votes}")
                     }
+                } else {
+                    binding.restaurantOfTheWeekName.text = "No winner yet"
+                    binding.restaurantOfTheWeekVotes.text = "0 votes"
+                    binding.restaurantOfTheWeekImage.setImageResource(android.R.color.transparent)
+                    Log.d("FetchWeeklyWinner", "No winner document exists")
                 }
+            }
+            .addOnFailureListener { e ->
+                Log.e("FetchWeeklyWinner", "Error fetching winner: $e")
+                showToast("Failed to fetch Restaurant of the Week: ${e.message}")
             }
     }
 
@@ -251,7 +260,7 @@ class RestaurantsFragment : Fragment() {
 
         db.collection("votes")
             .whereEqualTo("userId", currentUserId)
-            .whereGreaterThanOrEqualTo("timestamp", calculateStartOfWeek())
+            .whereGreaterThanOrEqualTo("timestamp", weekStartTimestamp)
             .get()
             .addOnSuccessListener { snapshot ->
                 if (snapshot.documents.isNotEmpty()) {
@@ -269,10 +278,22 @@ class RestaurantsFragment : Fragment() {
                                 .update("votes", FieldValue.increment(1))
                                 .addOnSuccessListener {
                                     showToast("Vote submitted!")
-                                    fetchWeeklyWinner()
+                                    fetchVotingData()
+                                }
+                                .addOnFailureListener { e ->
+                                    Log.e("VoteUpdate", "Failed to increment vote: $e")
+                                    showToast("Failed to submit vote.")
                                 }
                         }
+                        .addOnFailureListener { e ->
+                            Log.e("VoteSubmit", "Failed to record vote: $e")
+                            showToast("Failed to submit vote.")
+                        }
                 }
+            }
+            .addOnFailureListener { e ->
+                Log.e("VoteCheck", "Failed to check vote: $e")
+                showToast("Error checking your vote.")
             }
     }
 
@@ -286,62 +307,105 @@ class RestaurantsFragment : Fragment() {
         calendar.set(Calendar.MINUTE, 0)
         calendar.set(Calendar.SECOND, 0)
         calendar.set(Calendar.MILLISECOND, 0)
+        if (calendar.timeInMillis > System.currentTimeMillis()) {
+            calendar.add(Calendar.DAY_OF_YEAR, -7)
+        }
         return calendar.timeInMillis
     }
 
     private fun startCountdownTimer(timeInMillis: Long) {
-        // Cancel any existing timer
         countDownTimer?.cancel()
-
         countDownTimer = object : CountDownTimer(timeInMillis, 1000) {
             override fun onTick(millisUntilFinished: Long) {
                 val days = TimeUnit.MILLISECONDS.toDays(millisUntilFinished)
                 val hours = TimeUnit.MILLISECONDS.toHours(millisUntilFinished) % 24
                 val minutes = TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished) % 60
                 val seconds = TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished) % 60
-                daysTextView.text = String.format("%02d", days)
-                hoursTextView.text = String.format("%02d", hours)
-                minutesTextView.text = String.format("%02d", minutes)
-                secondsTextView.text = String.format("%02d", seconds)
+                binding.daysTextView.text = String.format("%02d", days)
+                binding.hoursTextView.text = String.format("%02d", hours)
+                binding.minutesTextView.text = String.format("%02d", minutes)
+                binding.secondsTextView.text = String.format("%02d", seconds)
             }
 
             override fun onFinish() {
-                resetRestaurantVotes()
-                clearUserVotes()
+                resetVotesAndSetWinner()
+                weekStartTimestamp = calculateStartOfWeek()
                 startCountdownTimer(calculateTimeUntilNextSundayMidnight())
             }
         }.start()
     }
 
-    private fun resetRestaurantVotes() {
-        val restaurantsRef = FirebaseFirestore.getInstance().collection("restaurants")
-        val winnerRef = FirebaseFirestore.getInstance().collection("weekly_winner").document("latest")
+    private fun calculateTimeUntilNextSundayMidnight(): Long {
+        val calendar = Calendar.getInstance()
+        calendar.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
+        calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        if (calendar.timeInMillis <= System.currentTimeMillis()) {
+            calendar.add(Calendar.DAY_OF_YEAR, 7)
+        }
+        return calendar.timeInMillis - System.currentTimeMillis()
+    }
+    private fun resetVotesAndSetWinner() {
+        val restaurantsRef = db.collection("restaurants")
+        val winnerRef = db.collection("weekly_winner").document("latest")
 
-        restaurantsRef.get().addOnSuccessListener { snapshot ->
-            val restaurants = snapshot.documents.mapNotNull { it.toObject(Restaurant::class.java) }
-
-            if (restaurants.isNotEmpty()) {
-                val highestVotedRestaurant = restaurants.maxByOrNull { it.votes }
-
-                highestVotedRestaurant?.let { winner ->
-                    val winnerData = WeeklyWinnerRestaurant(
-                        restaurantId = winner.id,
-                        name = winner.name,
-                        imageUrl = winner.imageUrl,
-                        votes = winner.votes,
-                        weekStartTimestamp = Timestamp.now()
-                    )
-
-                    winnerRef.set(winnerData)
-
-                    val batch = db.batch()
-                    snapshot.documents.forEach { doc ->
-                        batch.update(doc.reference, "votes", 0)
+        restaurantsRef.get()
+            .addOnSuccessListener { snapshot ->
+                val restaurants = snapshot.documents.mapNotNull { it.toObject(Restaurant::class.java)?.apply { id = it.id } }
+                if (restaurants.isNotEmpty()) {
+                    val highestVotedRestaurant = restaurants.maxByOrNull { it.votes }
+                    highestVotedRestaurant?.let { winner ->
+                        val winnerData = WeeklyWinnerRestaurant(
+                            restaurantId = winner.id,
+                            name = winner.name,
+                            imageUrl = winner.imageUrl,
+                            votes = winner.votes,
+                            weekStartTimestamp = Timestamp.now()
+                        )
+                        winnerRef.set(winnerData)
+                            .addOnSuccessListener {
+                                Log.d("WinnerSet", "Winner set: ${winner.name}")
+                                resetRestaurantVotes(restaurantsRef, snapshot)
+                            }
+                            .addOnFailureListener { e ->
+                                Log.e("WinnerSet", "Failed to set winner: $e")
+                                showToast("Failed to set Restaurant of the Week.")
+                            }
+                    } ?: run {
+                        Log.d("WinnerSet", "No votes cast this week.")
+                        winnerRef.set(mapOf("name" to "No winner", "votes" to 0, "imageUrl" to ""))
+                            .addOnSuccessListener {
+                                resetRestaurantVotes(restaurantsRef, snapshot)
+                            }
                     }
-                    batch.commit()
                 }
             }
+            .addOnFailureListener { e ->
+                Log.e("ResetVotes", "Failed to fetch restaurants: $e")
+                showToast("Failed to reset votes.")
+            }
+    }
+
+    private fun resetRestaurantVotes(restaurantsRef: Query, snapshot: com.google.firebase.firestore.QuerySnapshot) {
+        val batch = db.batch()
+        val resetTimestamp = Timestamp.now()
+        snapshot.documents.forEach { doc ->
+            batch.update(doc.reference, mapOf(
+                "votes" to 0,
+                "lastVoteReset" to resetTimestamp
+            ))
         }
+        batch.commit()
+            .addOnSuccessListener {
+                Log.d("ResetVotes", "Restaurant votes reset at $resetTimestamp.")
+                clearUserVotes()
+            }
+            .addOnFailureListener { e ->
+                Log.e("ResetVotes", "Failed to reset restaurant votes: $e")
+                showToast("Failed to reset votes.")
+            }
     }
 
     private fun clearUserVotes() {
@@ -351,10 +415,20 @@ class RestaurantsFragment : Fragment() {
                 querySnapshot.documents.forEach { document ->
                     batch.delete(document.reference)
                 }
-                batch.commit().addOnSuccessListener {
-                    Log.d("VotesReset", "All user vote records cleared.")
-                    showToast("Votes have been reset. You can vote again now!")
-                }
+                batch.commit()
+                    .addOnSuccessListener {
+                        Log.d("VotesReset", "All user vote records cleared.")
+                        showToast("Votes reset! New week started.")
+                        fetchWeeklyWinner()
+                        fetchVotingData()
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e("VotesReset", "Failed to clear user votes: $e")
+                        showToast("Failed to reset user votes.")
+                    }
+            }
+            .addOnFailureListener { e ->
+                Log.e("VotesReset", "Failed to fetch user votes: $e")
             }
     }
 
@@ -366,8 +440,8 @@ class RestaurantsFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        // Prevent memory leaks by cancelling the timer when the view is destroyed.
         countDownTimer?.cancel()
+        restaurantsListener?.remove()
         _binding = null
     }
 }
